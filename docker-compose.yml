@@ -1,0 +1,65 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:13
+    container_name: airflow_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    networks:
+      - airflow_net
+    volumes:
+      - airflow_postgres_data:/var/lib/postgresql/data
+
+  airflow-webserver:
+    image: apache/airflow:2.10.5
+    container_name: airflow_webserver
+    depends_on:
+      - postgres
+    restart: always
+    environment:
+      - SEOUL_API_KEY=${SEOUL_API_KEY}
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB}
+      - AIRFLOW__WEBSERVER__SECRET_KEY=${AIRFLOW__WEBSERVER__SECRET_KEY}
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./scripts:/opt/airflow/scripts
+      - ./data:/opt/airflow/data
+      - ./requirements.txt:/requirements.txt
+    ports:
+      - "8081:8080"
+    networks:
+      - airflow_net
+    command: webserver
+
+  airflow-scheduler:
+    image: apache/airflow:2.10.5
+    container_name: airflow_scheduler
+    depends_on:
+      - postgres
+      - airflow-webserver
+    restart: always
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB}
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./scripts:/opt/airflow/scripts
+      - ./data:/opt/airflow/data
+    networks:
+      - airflow_net
+    command: scheduler
+
+networks:
+  airflow_net:
+    driver: bridge
+volumes:
+  airflow_postgres_data:

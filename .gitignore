@@ -1,0 +1,13 @@
+# 데이터 및 로그 파일
+/data/
+/logs/
+
+# Python 캐시 파일
+__pycache__/
+
+# 환경 변수 파일 (민감한 정보 보호)
+.env
+.env.*
+
+# 개인 개발용 Docker Compose 설정
+docker-compose.override.yml
